@@ -41,6 +41,7 @@ Card:
 - Data
     - value -> int
     - suit  -> Char
+    - color -> int
 - Methods
     - __init__  -> Card
     - __str__   -> String   (" VS")
@@ -75,8 +76,48 @@ TableuPile:
 - Methods
     - __init__  -> Stack
     - add       -> Void     (Checks if card can be added)
-    - move      -> Stack    (returns cards set cards to [])
+    - move      -> stack    (returns cards set cards to [])
 
 ## Construction Documentation
+
+class Card(int: value, char: suit)
+    .__str__() -> str
+
+class Stack(Vec[Card]: cards)
+    .shuffle() -> void
+    .draw(int: index) -> Card
+
+class Deck()
+    .popAll() - > Vec[Card]
+
+class Foundation(Char):
+    .add(Card: card)
+    .getTop() -> str
+    .validate(Card: card) -> Bool
+
+class Stock(Vec[Card]):
+    .showHand() -> str
+    .drawStockCard() -> Card
+    .newHand()
+    .getCard() -> Card
+
+class TableuPile(Vec[Card]):
+    .addCard
+    .addStack
+    .validate
+    .move() -> Vec[Card]
+
+class Move():
+
+
+def display_board(Vec[Foundation], Vec[TableuPile], Stock)
+
+def stock_to_foundation(Stock, Foundation)
+
+def tableu_to_foundation(Tableu, Foundation)
+
+def stock_to_tableu(Stock, Tableu)
+
+def tableu_to_tableu(Tableu, Tableu)
 
 ## Optimization

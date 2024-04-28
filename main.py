@@ -10,8 +10,14 @@ import random
 #############
 # CONSTANTS #
 #############
-CARD_VALUES = range(1, 14)
+MAX_VALUE = 14
+CARD_VALUES = range(1, MAX_VALUE)
 SUITS = ['H', 'C', 'D', 'S']
+RED = 1
+BLACK = 2
+TABLEU_PILES = 7
+EMPTY_PILES = ['   ', '   ', '   ', '   ', '   ', '   ', '   ']
+VALID_MOVES = ['0', '1', '2', '3', '4', '5', '6', '7', 'h', 'c', 'd', 's', 'n', 'q', 'h']
 
 ###########
 # CLASSES #
@@ -22,6 +28,10 @@ class Card:
 
     def __init__(self, value, suit):
         self.value = value
+        if suit == 'H' or suit == 'D':
+            self.color = RED
+        elif suit == 'C' or suit == 'S':
+            self.color = BLACK
         self.suit = suit
 
     def __str__(self):
@@ -49,8 +59,8 @@ class Stack:
     def shuffle(self):
         random.shuffle(self.cards)
 
-    def draw(self, i=-1):
-        return self.cards.pop(i)
+    def draw(self, index=-1):
+        return self.cards.pop(index)
 
 class Deck(Stack):
 
@@ -61,6 +71,11 @@ class Deck(Stack):
                 cards.append(Card(value, suit))
         super(Deck, self).__init__(cards)
 
+    def popAll(self):
+        cards = self.cards
+        self.cards = []
+        return cards
+
 class Foundation(Stack):
 
     def __init__(self, suit):
@@ -70,25 +85,267 @@ class Foundation(Stack):
         self.suit = suit
 
     def add(self, card):
-        if self.suit == card.suit and self.value == card.value - 1:
-            self.cards.append(card)
-            self.value += 1
+        self.cards.append(card)
+        self.value += 1
+
+    def getTop(self):
+        if len(self.cards) == 0:
+            return f" 0{self.suit}"
         else:
-            expected = Card(self.value + 1, self.suit)
-            raise Exception(f"Can't add to foundation. Expected: {expected} Got: {card}")
+            return f"{self.cards[-1]}"
+
+    def validate(self, card):
+        if self.suit == card.suit and self.value == card.value - 1:
+            return True
+        else:
+            return False
+
+
+class Stock(Stack):
+
+    def __init__(self, cards):
+        super(Stock, self).__init__(cards)
+        self.mark = 2
+
+    def showHand(self):
+        window = []
+        result = ""
+        if self.mark == 0:
+            window = [0]
+        elif self.mark == 1:
+            window = [0, 1]
+        else:
+            window = range(self.mark-2, self.mark+1)
+        for i in window:
+            result += f"{self.cards[i]}"
+        return result
+
+    def drawStockCard(self):
+        return self.cards.pop(self.mark)
+    
+    def newHand(self):
+        end = len(self.cards) - 1
+        
+        if self.mark == end:
+            self.mark = 2
+        elif self.mark + 3 > end:
+            self.mark = end
+        else: 
+            self.mark += 3
+
+    def getCard(self):
+        return self.cards[self.mark]
+
 
 class TableuPile(Stack):
 
     def __init__(self, cards=[]):
         super(TableuPile, self).__init__(cards)
 
-    def add(self, cards):
+    def addCard(self, card):
+        self.cards.append(card)
+
+    def addStack(self, cards):
+        self.cards += cards
+
+    def validate(self, card):
+        value1 = self.cards[-1].value
+        color1 = self.cards[-1].color
+
+        value2 = card.value
+        color2 = card.color
+
+        if value1 == value2 + 1 and color1 != color2:
+            return True
+        else:
+            return False
+
+    def move(self):
+        cards = self.cards
+        self.cards = []
+        return cards
+
+    def getRootCard(self):
+        return self.cards[0]
+
+class Move:
+
+    def __init__(self):
+        self.source = ''
+        self.dest = ''
+        self.command = ''
+        
+        while self.source not in VALID_MOVES:
+            source = input("From: ")
+            if source in ['q', 'n']:
+                self.command = source
+                return
+            else:
+                self.source = source
+
+        while self.dest not in VALID_MOVES:
+            source = input("To: ")
+            if source in ['q', 'n']:
+                self.command = source
+                return
+            else:
+                self.dest = source
+
+
 
 
 #############
 # FUNCTIONS #
 #############
 
+def display_board(foundations, tableu_piles, stock):
+    hearts = ""
+    clubs = ""
+    diamonds = ""
+    spades = ""
+
+    for i in range(0, len(foundations)):
+        match (foundations[i].suit):
+            case "H":
+                hearts = f"{foundations[i].getTop()}"
+            case "C":
+                clubs = f"{foundations[i].getTop()}"
+            case "D":
+                diamonds = f"{foundations[i].getTop()}"
+            case "S":
+                spades = f"{foundations[i].getTop()}"
+    
+    print(f" {hearts} {clubs} {diamonds} {spades} {stock.showHand()}")
+
+    tableu_pile_lengths = []
+    for i in range(0, TABLEU_PILES):
+        length = len(tableu_piles[i].cards)
+        tableu_pile_lengths.append(length)
+
+    for i in range(0, MAX_VALUE):
+        line = EMPTY_PILES
+        for j in range(0, TABLEU_PILES):
+            if tableu_pile_lengths[j] > i:
+                line[j] = str(tableu_piles[j].cards[i])
+            else:
+                line[j] = '   '
+        print(' '.join(line))
+
+def stock_to_foundation(stock, foundation):
+    temp_card = stock.getCard()
+    if foundation.validate(temp_card):
+        card = stock.drawStockCard()
+        foundation.add(card)
+    else:
+        print("Not a valid move")
+
+def tableu_to_foundation(tableu, foundation):
+    temp_card = tableu.getFirstCard()
+    if foundation.validate(temp_card):
+        card = tableu.takeCard()
+        foundation.addCard(card)
+
+def stock_to_tableu(stock, tableu):
+    temp_card = stock.getCard()
+    if tableu.validate(temp_card):
+        card = stock.drawStockCard()
+        tableu.addCard(card)
+
+def tableu_to_tableu(tableu1, tableu2):
+    temp_card = tableu1.getRootCard()
+    if tableu2.validate(temp_card):
+        stack = tableu1.move()
+        tableu2.addStack(stack)
+
+def get_type(move):
+    match (move):
+        case '1' | '2' | '3' | '4' | '5' | '6' | '7' :
+            return "tableu"
+        case 'h' | 'c' | 'd' | 's':
+            return "foundation"
+        case '0':
+            return "stock"
+        case _:
+            return f"Error, unrecognized move: {move}"
+
+def get_foundation_index(c):
+    match (c):
+        case 'h':
+            return 0
+        case 'c':
+            return 1
+        case 'd':
+            return 2
+        case 's':
+            return 3
+        case _:
+            raise Exception("Error")
+
+
 ########
 # MAIN #
 ########
+
+def main():
+    deck = Deck()
+    deck.shuffle()
+    foundations = []
+    stacks = []
+    tableu_piles = []
+
+
+    for suit in SUITS:
+        foundations.append(Foundation(suit))
+
+    for i in range(0, TABLEU_PILES):
+        cards_to_stack = i - 1
+        stack = Stack()
+        while cards_to_stack > 0:
+            stack.cards.append(deck.draw())
+            cards_to_stack -= 1
+
+        stacks.append(stack)
+        tableu_piles.append(TableuPile([deck.draw()]))
+
+    stock = Stock(deck.popAll())
+            
+    for i in range(0, TABLEU_PILES):
+        print(stacks[i].cards[0])
+
+    while True:
+        # Display playing board
+        display_board(foundations, tableu_piles, stock)
+
+        # Gets player move
+        move = Move()
+
+        # Handles any commands 
+        if move.command == 'q':
+            print("Better luck next time!")
+            break
+        elif move.command == 'n':
+            stock.newHand()
+
+        # Gets the type for each source
+        source_type = get_type(move.source)
+        dest_type = get_type(move.dest)
+
+        # Make a move boi
+        if source_type == "stock" and dest_type == "foundation":
+            i = get_foundation_index(move.dest)
+            stock_to_foundation(stock, foundations[i])
+        elif source_type == "tableu" and dest_type == "foundation":
+            i = get_foundation_index(move.dest)
+            tableu_to_foundation(tableu_piles[int(move.source)-1], foundations[i])
+        elif source_type == "stock" and dest_type == "tableu":
+            stock_to_tableu(stock, tableu_piles[int(move.dest)-1])
+        elif source_type == "tableu" and dest_type == "tableu":
+            tableu_to_tableu(tableu_piles[int(move.source)-1], tableu_piles[int(move.dest)-1])
+
+        # draw stacks
+        for i in range(0, TABLEU_PILES):
+            if len(tableu_piles[i].cards) < 1:
+                if len(stacks[i].cards) > 0:
+                    tableu_piles[i].addCard(stacks[i].draw())
+
+main()
