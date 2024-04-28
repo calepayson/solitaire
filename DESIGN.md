@@ -102,9 +102,9 @@ class Stock(Vec[Card]):
     .getCard() -> Card
 
 class TableuPile(Vec[Card]):
-    .addCard
-    .addStack
-    .validate
+    .addCard(Card)
+    .addStack(Vec[Card])
+    .validate(Card)
     .move() -> Vec[Card]
 
 class Move():
@@ -119,5 +119,13 @@ def tableu_to_foundation(Tableu, Foundation)
 def stock_to_tableu(Stock, Tableu)
 
 def tableu_to_tableu(Tableu, Tableu)
+
+def get_type(Move) -> Str
+
+### ToDo
+
+- Stacks have an extra(?) card
+- Tableu to foundation - 'TableuPile' object has no attribute 'getFirstCard'. Did you mean: 'getRootCard'?
+- Drawing card from stock[2] adds a card to stock
 
 ## Optimization
