@@ -84,7 +84,7 @@ class Foundation(Stack):
         self.value = 0
         self.suit = suit
 
-    def add(self, card):
+    def addCard(self, card):
         self.cards.append(card)
         self.value += 1
 
@@ -115,13 +115,14 @@ class Stock(Stack):
         elif self.mark == 1:
             window = [0, 1]
         else:
-            window = range(self.mark-2, self.mark+1)
+            window = range(max(0, self.mark-2), min(self.mark+1, len(self.cards)))
         for i in window:
             result += f"{self.cards[i]}"
         return result
 
     def drawStockCard(self):
-        return self.cards.pop(self.mark)
+        self.mark -= 1
+        return self.cards.pop(self.mark+1)
     
     def newHand(self):
         end = len(self.cards) - 1
@@ -149,6 +150,12 @@ class TableuPile(Stack):
         self.cards += cards
 
     def validate(self, card):
+        if len(self.cards) == 0:
+            if card.value == 13:
+                return True
+            else:
+                return False
+
         value1 = self.cards[-1].value
         color1 = self.cards[-1].color
 
@@ -167,6 +174,15 @@ class TableuPile(Stack):
 
     def getRootCard(self):
         return self.cards[0]
+
+    def getFirstCard(self):
+        if len(self.cards) > 0:
+            return self.cards[-1];
+        else:
+            return Card(0, 'S')
+
+    def takeCard(self):
+        return self.draw()
 
 class Move:
 
@@ -235,7 +251,7 @@ def stock_to_foundation(stock, foundation):
     temp_card = stock.getCard()
     if foundation.validate(temp_card):
         card = stock.drawStockCard()
-        foundation.add(card)
+        foundation.addCard(card)
     else:
         print("Not a valid move")
 
@@ -293,26 +309,29 @@ def main():
     stacks = []
     tableu_piles = []
 
-
+    
     for suit in SUITS:
         foundations.append(Foundation(suit))
 
     for i in range(0, TABLEU_PILES):
-        cards_to_stack = i - 1
-        stack = Stack()
-        while cards_to_stack > 0:
+        stack = Stack(cards=[])
+        for j in range(0, i):
             stack.cards.append(deck.draw())
-            cards_to_stack -= 1
 
         stacks.append(stack)
         tableu_piles.append(TableuPile([deck.draw()]))
 
     stock = Stock(deck.popAll())
             
-    for i in range(0, TABLEU_PILES):
-        print(stacks[i].cards[0])
-
     while True:
+        len_h = len(foundations[0].cards)
+        len_c = len(foundations[1].cards)
+        len_d = len(foundations[2].cards)
+        len_s = len(foundations[3].cards)
+
+        if len_h >= 13 and len_c >= 13 and len_d >= 13 and len_s >= 13:
+            break
+
         # Display playing board
         display_board(foundations, tableu_piles, stock)
 
@@ -322,7 +341,7 @@ def main():
         # Handles any commands 
         if move.command == 'q':
             print("Better luck next time!")
-            break
+            return
         elif move.command == 'n':
             stock.newHand()
 
@@ -347,5 +366,8 @@ def main():
             if len(tableu_piles[i].cards) < 1:
                 if len(stacks[i].cards) > 0:
                     tableu_piles[i].addCard(stacks[i].draw())
+
+    display_board(foundations, tableu_piles, stock)
+    print("WOOOOOOO!!!!! YOU DA BEST!!!! YAAAAAAA!!!!")
 
 main()

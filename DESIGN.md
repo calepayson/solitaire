@@ -91,7 +91,7 @@ class Deck()
     .popAll() - > Vec[Card]
 
 class Foundation(Char):
-    .add(Card: card)
+    .addCard(Card: card)
     .getTop() -> str
     .validate(Card: card) -> Bool
 
@@ -106,6 +106,9 @@ class TableuPile(Vec[Card]):
     .addStack(Vec[Card])
     .validate(Card)
     .move() -> Vec[Card]
+    .getRootCard() -> Card
+    .getFirstCard() -> Card
+    .takeCard() -> Card
 
 class Move():
 
